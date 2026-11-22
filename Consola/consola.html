@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corazón de Pulpa · Consola</title>
+<style>
+:root{
+  --bg:#1A1410; --bg2:#231a14; --panel:#2E231B; --line:#4a3a2c;
+  --gold:#C9A24D; --gold2:#E8C877; --cream:#F5EFE3; --muted:#B8AC98;
+  --verde:#6B8E23; --roja:#E63946;
+  --clima:#3D9BE9; --cultura:#FF9F1C; --vrio:#9B6BFF; --criterio:#E8B04A;
+  --serif:"Playfair Display", Georgia, "Times New Roman", serif;
+  --sans:"Montserrat", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--cream);font-family:var(--sans);overflow:hidden}
+body{background:radial-gradient(ellipse at 50% 0%, #2c2018 0%, var(--bg) 65%)}
+button{font-family:inherit;color:inherit;cursor:pointer}
+body.idle, body.idle *{cursor:none !important}
+
+#video{position:fixed;inset:0;width:100%;height:100%;background:#000;object-fit:contain;z-index:1}
+#video[hidden]{display:none}
+#view{position:fixed;inset:0;z-index:2}
+body.playing #view{pointer-events:none}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;top:2.2vh;right:1.8vw;z-index:5;width:clamp(240px,22vw,420px);
+  background:rgba(26,20,16,.88);border:1px solid var(--line);border-radius:14px;padding:1.4vh 1.2vw;
+  box-shadow:0 10px 30px rgba(0,0,0,.4);transition:opacity .3s}
+body.playing:not(.hud-on) #hud, body.nohud #hud, body.start #hud{opacity:0;pointer-events:none}
+.h-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:.3vh .6vw;margin:.7vh 0}
+.h-lbl{font-size:clamp(11px,.85vw,16px);font-weight:600;letter-spacing:.02em;color:var(--muted)}
+.h-val{font-size:clamp(14px,1.15vw,22px);font-weight:700;font-variant-numeric:tabular-nums;position:relative}
+.h-track{grid-column:1/3;height:clamp(6px,.6vh,10px);background:#3a2e24;border-radius:99px;overflow:hidden}
+.h-fill{height:100%;border-radius:99px;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.delta{position:absolute;right:calc(100% + 6px);top:50%;transform:translateY(-50%);font-size:.8em;font-weight:800;
+  padding:.1em .45em;border-radius:6px;opacity:0;transition:opacity .3s;white-space:nowrap}
+.delta.show{opacity:1}
+.delta.up{background:#2f5d2a;color:#d6f5cd}.delta.down{background:#6b1f24;color:#ffd5d8}
+
+/* ---------- Barra de control ---------- */
+#bar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;align-items:center;gap:.8vw;padding:1.2vh 1.6vw;
+  background:linear-gradient(to top, rgba(0,0,0,.85), rgba(0,0,0,0));transform:translateY(100%);transition:transform .25s}
+#bar.show, body.start #bar{transform:none}
+#bar .where{flex:1;min-width:0;font-size:clamp(12px,.9vw,16px);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar .where b{color:var(--cream)}
+#bar button{background:rgba(46,35,27,.95);border:1px solid var(--line);border-radius:10px;padding:.8vh 1vw;font-size:clamp(12px,.9vw,16px);font-weight:600}
+#bar button:hover{border-color:var(--gold)}
+
+/* ---------- Pantallas comunes ---------- */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:6vh 6vw}
+.kicker{font-size:clamp(13px,1.15vw,22px);font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+.serif{font-family:var(--serif);font-style:italic;font-weight:700}
+.hint{font-size:clamp(12px,1vw,18px);color:var(--muted)}
+.hint kbd, .keys kbd{display:inline-block;min-width:1.8em;padding:.1em .45em;border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;background:var(--panel);color:var(--cream);font-family:var(--sans);font-size:.9em;font-weight:700}
+.btn{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.6vh 2vw;font-size:clamp(14px,1.2vw,22px);font-weight:700}
+.btn:hover{border-color:var(--gold)}
+.btn.primary{background:linear-gradient(160deg,var(--gold2),var(--gold));color:#2a1d10;border:none}
+.fadein{animation:fade .6s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ---------- Inicio ---------- */
+.title-main{font-family:var(--serif);font-style:italic;font-weight:800;font-size:clamp(48px,9vw,180px);line-height:1;
+  background:linear-gradient(180deg,#F7DE9A,#C9A24D 60%,#9c7a2f);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 20px rgba(201,162,77,.25))}
+.title-sub{font-family:var(--serif);font-style:italic;font-size:clamp(20px,2.6vw,48px);margin-top:1.5vh}
+.fruits{font-size:clamp(28px,3.6vw,64px);letter-spacing:.3em;margin:3vh 0 1vh}
+.start-actions{display:flex;flex-wrap:wrap;gap:1.2vw;justify-content:center;margin-top:4vh}
+.toggle{display:flex;align-items:center;gap:.6vw;margin-top:3vh;font-size:clamp(13px,1vw,18px);color:var(--muted);cursor:pointer}
+.toggle input{width:1.3em;height:1.3em;accent-color:var(--gold)}
+.credit{position:absolute;bottom:calc(5.5vh + 34px);left:0;right:0;font-size:clamp(11px,.85vw,15px);color:#8c806e}
+
+/* ---------- Votación ---------- */
+.vote{position:absolute;inset:0;display:grid;grid-template-rows:auto auto 1fr auto;gap:2.4vh;padding:5vh 5vw 6vh}
+.vote .head{max-width:calc(100vw - 13vw - clamp(240px,22vw,420px));text-align:left}
+.vote .question{font-family:var(--serif);font-style:italic;font-weight:700;font-size:clamp(26px,3.9vw,76px);line-height:1.12;margin-top:1vh}
+.vote .question.long{font-size:clamp(22px,2.9vw,56px)}
+.vote .note{font-size:clamp(12px,1.05vw,19px);color:var(--muted);text-align:left}
+.options{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:4vw;min-height:0}
+.opt{position:relative;border:none;border-radius:28px;padding:4vh 3vw;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.4vh;
+  text-align:center;color:#fff;transition:transform .35s, opacity .35s, filter .35s, box-shadow .35s;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.opt.verde{background:linear-gradient(160deg,#86b133,#5b7a1b 70%,#4a6315)}
+.opt.roja{background:linear-gradient(160deg,#f2545f,#c92a36 70%,#a51e29)}
+.opt .icon{font-size:clamp(36px,7vh,110px);line-height:1}
+.opt .lbl{font-weight:800;font-size:clamp(28px,4.6vw,96px);letter-spacing:.04em;line-height:1}
+.opt .desc{font-size:clamp(14px,1.55vw,30px);max-width:28ch;line-height:1.3;font-weight:500}
+.opt .key{position:absolute;top:2vh;left:1.4vw;font-size:clamp(11px,.9vw,16px);font-weight:700;border:2px solid rgba(255,255,255,.6);border-radius:8px;padding:.2em .6em}
+.opt.chosen{transform:scale(1.035);box-shadow:0 0 0 6px var(--gold2), 0 20px 50px rgba(0,0,0,.5)}
+.opt.dim{opacity:.22;filter:grayscale(.7)}
+.timer{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:clamp(90px,13vh,170px);height:clamp(90px,13vh,170px);
+  border-radius:50%;background:var(--bg);display:grid;place-items:center;box-shadow:0 0 0 8px var(--bg)}
+.timer svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.timer .t{font-size:clamp(28px,4.6vh,62px);font-weight:800;font-variant-numeric:tabular-nums}
+.timer.out{animation:pulse .8s infinite}
+.timer.out .t{font-size:clamp(14px,2vh,26px);color:var(--gold2);letter-spacing:.08em}
+@keyframes pulse{50%{box-shadow:0 0 0 8px var(--bg),0 0 0 16px rgba(232,200,119,.35)}}
+.vote .foot{text-align:center}
+.resolve{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:4vh 6vw 5vh;text-align:center;
+  background:linear-gradient(to top, rgba(26,20,16,.98) 70%, rgba(26,20,16,0));animation:rise .45s ease both}
+@keyframes rise{from{transform:translateY(40%);opacity:0}to{transform:none;opacity:1}}
+.resolve .big{font-family:var(--serif);font-style:italic;font-weight:800;font-size:clamp(28px,4vw,76px)}
+.resolve .small{font-size:clamp(14px,1.5vw,28px);color:var(--cream);margin-top:1vh}
+
+/* ---------- Barras grandes ---------- */
+.bigtitle{font-family:var(--serif);font-style:italic;font-weight:800;font-size:clamp(34px,5vw,100px);line-height:1.05}
+.bigsub{font-family:var(--serif);font-style:italic;font-size:clamp(20px,2.4vw,46px);color:var(--gold2);margin-top:1vh}
+.bigbars{width:min(78vw,1400px);margin-top:5vh;display:flex;flex-direction:column;gap:3vh}
+.bb{display:grid;grid-template-columns:clamp(150px,17vw,320px) 1fr clamp(70px,6vw,120px) clamp(70px,6vw,120px);align-items:center;gap:1.4vw}
+.bb-l{text-align:left;font-weight:700;font-size:clamp(15px,1.6vw,30px)}
+.bb-track{position:relative;height:clamp(20px,3.6vh,48px);background:#3a2e24;border-radius:99px;overflow:hidden}
+.bb-fill{height:100%;border-radius:99px;transition:width 1.8s cubic-bezier(.2,.8,.2,1)}
+.bb-mark{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--cream);opacity:.85}
+.bb-v{font-size:clamp(22px,2.6vw,52px);font-weight:800;font-variant-numeric:tabular-nums;text-align:right}
+.bb-d{font-size:clamp(15px,1.5vw,28px);font-weight:800;text-align:left;opacity:0;transition:opacity .5s}
+.bb-d.show{opacity:1}.bb-d.up{color:#9be08a}.bb-d.down{color:#ff8a92}.bb-d.zero{color:var(--muted)}
+.avg{margin-top:4vh;font-size:clamp(18px,1.8vw,34px);color:var(--muted)}
+.avg b{font-size:clamp(40px,5vw,96px);color:var(--cream);font-variant-numeric:tabular-nums;margin:0 .3em;vertical-align:middle}
+.verdict{margin-top:2vh;font-family:var(--serif);font-style:italic;font-weight:800;font-size:clamp(34px,5.4vw,110px);opacity:0;transform:scale(.9);transition:all .8s}
+.verdict.show{opacity:1;transform:none}
+.verdict.a{color:var(--gold2);text-shadow:0 0 40px rgba(255,159,28,.5)}
+.verdict.b{color:#9fb3c8}
+
+/* ---------- Respuesta ---------- */
+.mark{font-size:clamp(60px,13vh,180px);line-height:1;font-weight:800}
+.mark.ok{color:#9be08a}.mark.no{color:#ff8a92}
+.answer-lbl{display:inline-block;margin-top:2vh;padding:.3em .9em;border-radius:16px;font-weight:800;font-size:clamp(28px,4.4vw,90px);color:#fff}
+.answer-lbl.verde{background:var(--verde)}.answer-lbl.roja{background:var(--roja)}
+.explain{font-size:clamp(18px,2.1vw,40px);max-width:40ch;margin-top:3vh;line-height:1.3}
+.effect{margin-top:2.4vh;font-size:clamp(15px,1.5vw,28px);font-weight:700;color:var(--gold2)}
+
+/* ---------- Grito ---------- */
+.call{font-family:var(--serif);font-style:italic;font-weight:700;font-size:clamp(30px,4.6vw,92px);margin-top:1.4vh}
+.resp{font-family:var(--serif);font-style:italic;font-weight:800;font-size:clamp(40px,7vw,150px);color:var(--gold2);margin-top:1.4vh;opacity:0;transform:scale(.85);transition:all .7s}
+.resp.show{opacity:1;transform:none}
+.who{font-size:clamp(15px,1.5vw,28px);color:var(--muted);margin-top:4vh}
+
+/* ---------- Video ausente / ensayo ---------- */
+.ph{max-width:min(80vw,1300px);border:2px dashed var(--gold);border-radius:24px;padding:5vh 4vw;background:rgba(46,35,27,.6)}
+.ph .file{font-family:Consolas, "Courier New", monospace;font-size:clamp(14px,1.3vw,24px);color:var(--gold2);margin-top:2vh}
+.ph .rows{font-size:clamp(13px,1.1vw,20px);color:var(--muted);margin-top:1vh}
+.ph .sum{font-size:clamp(16px,1.7vw,32px);margin-top:3vh;line-height:1.35}
+.tap{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.6);z-index:4}
+
+/* ---------- Superposiciones (menú, ayuda, videos) ---------- */
+.overlay{position:fixed;inset:0;z-index:10;background:rgba(10,8,6,.92);display:flex;justify-content:center;align-items:flex-start;overflow:auto;padding:5vh 4vw}
+.overlay[hidden]{display:none}
+.card{width:min(1100px,100%);background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:3.5vh 2.6vw}
+.card h2{font-family:var(--serif);font-style:italic;font-size:clamp(24px,2.4vw,42px);margin-bottom:1.5vh}
+.card h3{font-size:clamp(13px,1vw,18px);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:2.4vh 0 1vh}
+.card p{color:var(--muted);font-size:clamp(13px,1vw,18px);line-height:1.5}
+.card .close{float:right}
+.steps{display:flex;flex-direction:column;gap:4px}
+.steps button{text-align:left;background:transparent;border:1px solid transparent;border-radius:8px;padding:.6vh .8vw;font-size:clamp(13px,1vw,17px);color:var(--cream)}
+.steps button:hover{border-color:var(--line);background:var(--panel)}
+.steps button.cur{border-color:var(--gold);background:var(--panel)}
+.steps .t{color:var(--muted);font-size:.85em;margin-left:.6em}
+.adjust{display:grid;grid-template-columns:repeat(4,1fr);gap:1vw}
+.adjust label{display:flex;flex-direction:column;gap:.5vh;font-size:clamp(12px,.9vw,16px);color:var(--muted)}
+.adjust input{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.8vh .6vw;font-size:clamp(16px,1.3vw,24px);color:var(--cream);font-family:inherit;font-weight:700;width:100%}
+.row-actions{display:flex;flex-wrap:wrap;gap:.8vw;margin-top:1.6vh}
+table{width:100%;border-collapse:collapse;font-size:clamp(12px,.95vw,17px)}
+th,td{text-align:left;padding:.8vh .6vw;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--gold);font-weight:700;letter-spacing:.04em}
+td.mono{font-family:Consolas, "Courier New", monospace;color:var(--gold2);white-space:nowrap}
+.ok{color:#9be08a;font-weight:700}.miss{color:#ff8a92;font-weight:700}.wait{color:var(--muted)}
+.keys td:first-child{white-space:nowrap}
+
+/* ---------- Resumen final ---------- */
+.end{position:absolute;inset:0;overflow:auto;padding:6vh 6vw;display:flex;flex-direction:column;align-items:center}
+.end table{max-width:1300px;margin-top:3vh;font-size:clamp(14px,1.15vw,22px)}
+.end td,.end th{padding:1.2vh .8vw}
+.chip{display:inline-block;padding:.1em .6em;border-radius:8px;font-weight:800;color:#fff;font-size:.9em}
+.chip.duplicar,.chip.si{background:var(--verde)}.chip.adaptar,.chip.no{background:var(--roja)}
+</style>
+</head>
+<body class="start">
+<video id="video" hidden playsinline preload="auto"></video>
+<div id="view"></div>
+
+<div id="hud" aria-label="Indicadores de FrutiTech"></div>
+
+<div id="bar">
+  <div class="where" id="where"></div>
+  <button id="b-back" title="Atrás (RePág / ←)">⟵ Atrás</button>
+  <button id="b-next" title="Continuar (Espacio / AvPág / →)">Continuar ▶</button>
+  <button id="b-menu" title="Menú (M)">☰ Menú</button>
+  <button id="b-hud" title="Mostrar indicadores durante el video (H)">📊 HUD</button>
+  <button id="b-fs" title="Pantalla completa (F)">⛶</button>
+  <button id="b-snd" title="Sonidos (S)">🔊</button>
+  <button id="b-help" title="Ayuda (?)">?</button>
+</div>
+
+<div class="overlay" id="ov-menu" hidden></div>
+<div class="overlay" id="ov-help" hidden></div>
+<div class="overlay" id="ov-files" hidden></div>
+
+<script>
+"use strict";
+/* =========================================================
+   Corazón de Pulpa · Consola de la función
+   Funciona sin internet. Los videos van en la carpeta videos/
+   ========================================================= */
+
+const $ = s => document.querySelector(s);
+const view = $('#view'), video = $('#video'), hud = $('#hud');
+const KEY_SAVE = 'cdp-consola-v2', KEY_SET = 'cdp-consola-ajustes-v1';
+
+const IND = [
+  {key:'clima',   label:'Clima laboral'},
+  {key:'cultura', label:'Cultura / Alma'},
+  {key:'vrio',    label:'Ventaja VRIO'},
+];
+const INIT = {clima:82, cultura:85, vrio:70, criterio:0, choices:{}, final:null, verOtro:false, bonus:0};
+const CRIT_MAX = 20;
+const UMBRAL = 55;
+const D3 = {adaptar:{clima:8, cultura:7, vrio:6}, duplicar:{clima:-4, cultura:-4, vrio:-3}};
+
+const clone = o => JSON.parse(JSON.stringify(o));
+const clamp = n => Math.max(0, Math.min(100, Math.round(n)));
+const val = (x, s) => typeof x === 'function' ? x(s) : x;
+const fmt = n => (n > 0 ? '+' : n < 0 ? '−' : '±') + Math.abs(n);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const avg = s => Math.round((s.clima + s.cultura + s.vrio) / 3 * 10) / 10;
+
+/* ---------- Opciones ---------- */
+const OPT_DA = (dup, adapt) => [
+  {key:'duplicar', label:'DUPLICAR', icon:'🥑', desc:dup,   cls:'verde'},
+  {key:'adaptar',  label:'ADAPTAR',  icon:'🍓', desc:adapt, cls:'roja'}];
+const OPT_SN = [
+  {key:'si', label:'SÍ', icon:'✓', desc:'Tarjeta verde', cls:'verde'},
+  {key:'no', label:'NO', icon:'✗', desc:'Tarjeta roja',  cls:'roja'}];
+
+/* =========================================================
+   GUION DE LA FUNCIÓN
+   ========================================================= */
+const STEPS = [];
+let CUR = '', first = false;
+function sec(name){ CUR = name; first = true; }
+function add(s){ s.chapter = CUR; if(first){ s.first = true; first = false; } STEPS.push(s); return s; }
+function vid(file, title, rows, summary, extra){ return add(Object.assign({type:'video', file, title, rows, summary}, extra || {})); }
+function ind(title, target){ return add({type:'indicators', title, target}); }
+
+/* Decisión del Acto 1: el salón opina, Don Harold hace lo que quiere */
+function act1(id, n, cap, q, dup, adapt, rowsDup, rowsAdapt){
+  add({type:'vote', id, label:`Decisión ${n}`, kicker:`Decisión ${n}`, question:q, timer:45, act:1, options:OPT_DA(dup, adapt),
+    apply(s, k){ if(k === 'adaptar') s.criterio += 10; },
+    resolve(s, k){ return k === 'adaptar'
+      ? {big:'El salón eligió ADAPTAR', small:'Criterio del salón +10. Pero en el Acto 1 el que decide es Don Harold…'}
+      : {big:'El salón eligió DUPLICAR', small:'Criterio del salón +0. Veamos qué hace Don Harold…'}; }});
+  vid(s => `${cap}-${s.choices[id]}.mp4`, `Reacción a la decisión ${n}`,
+      s => s.choices[id] === 'duplicar' ? rowsDup : rowsAdapt,
+      'La reacción de Don Harold según lo que votó el salón.',
+      {variants:[{file:`${cap}-duplicar.mp4`, rows:rowsDup}, {file:`${cap}-adaptar.mp4`, rows:rowsAdapt}]});
+}
+
+/* Pregunta con respuesta correcta (prueba VRIO) */
+function quiz(o){
+  add({type:'vote', id:o.id, label:o.label, kicker:o.kicker, question:o.q, timer:o.timer, options:o.options, note:o.note,
+    apply(s, k){ if(k === o.correct) o.ok(s); },
+    resolve(s, k){ const op = o.options.find(x => x.key === k); return {big:`El salón respondió: ${op.label}`, small:o.wait}; }});
+  vid(o.file, o.videoTitle, o.rows, o.videoSum);
+  add({type:'answer', id:o.id, label:o.label + ' · respuesta', correct:o.correct, options:o.options, explain:o.explain, effect:o.effect});
+}
+
+/* Decisión 3: ahora sí se ejecuta */
+function d3(id, n, title, q, dup, adapt, cap, rowsDup, rowsAdapt){
+  add({type:'vote', id, label:`Decisión 3${n}`, kicker:`Decisión 3 · ${title} · ${'ab'.indexOf(n) + 1} de 2`, question:q, timer:30, act:2, options:OPT_DA(dup, adapt),
+    apply(s, k){ const d = D3[k]; for(const x in d) s[x] = clamp(s[x] + d[x]); },
+    resolve(s, k){ const d = D3[k];
+      return {big:`El salón decidió ${k === 'adaptar' ? 'ADAPTAR' : 'DUPLICAR'}`,
+              small:`Clima ${fmt(d.clima)} · Cultura ${fmt(d.cultura)} · VRIO ${fmt(d.vrio)} · Esta vez, se ejecuta.`}; }});
+  vid(s => `${cap}-${s.choices[id]}.mp4`, `Resultado de la decisión 3${n}`,
+      s => s.choices[id] === 'duplicar' ? rowsDup : rowsAdapt,
+      'Lo que pasa en FrutiTech con la decisión del salón.',
+      {variants:[{file:`${cap}-duplicar.mp4`, rows:rowsDup}, {file:`${cap}-adaptar.mp4`, rows:rowsAdapt}]});
+}
+
+/* ----- Intro y prólogo ----- */
+sec('Intro');
+add({type:'luces', label:'Apaguen las luces'});
+vid('intro.mp4', 'Intro · "Corazón de Pulpa"', 'Póster + C1 a C4 + Don Lulo', 'Presentan los integrantes del equipo y el profesor. Cada personaje aparece con su letrero de telenovela.');
+sec('Prólogo');
+vid('prologo.mp4', 'Prólogo · "Lo tenía todo"', 'P1 a P3', 'La gala copiada y sin alma. Daniel con un sobre. Don Harold brinda solo. "Tres meses antes…"');
+add({type:'grito', label:'Ensayo del grito', who:'Cuando Don Harold diga:', call:'¡Así lo hace Frugle!', resp:'¡Pero nosotros no somos Frugle!'});
+
+/* ----- Capítulo 1 ----- */
+sec('Capítulo 1 · El atajo');
+vid('cap01.mp4', 'Capítulo 1 · El atajo', '1.1, J1 a J4, 1.7, 1.8', 'Don Harold vuelve del congreso con el 3x2 de Frugle "cambiándole el logo". Valentina pide diagnóstico, Daniel pregunta por la planta. El dedo sobre ENTER.');
+act1('d1', 1, 'cap01', '¿Qué debe hacer Don Harold con la política 3x2?',
+  'Enviarla hoy, tal cual llegó.', 'Frenar y hacer primero un diagnóstico.',
+  '1D', '1A');
+ind('Fin del capítulo 1', {clima:76, cultura:78, vrio:60});
+
+/* ----- Capítulo 2 ----- */
+sec('Capítulo 2 · Pura cáscara');
+vid('cap02.mp4', 'Capítulo 2 · Pura cáscara', '2.1 a 2.10 + G3', 'Vigilancia cada cinco minutos. Viernes flexible solo para la torre. Don Lulo: "nadie vino a preguntarnos". La gala reemplaza la novena. Daniel renuncia y una mano de piña lo detiene.');
+ind('Fin del Acto 1', {clima:45, cultura:50, vrio:42});
+sec('Comercial');
+vid('comercial.mp4', 'Comercial · Isomorfina Forte', 'CM1 a CM3', '"¿Su empresa sufre de incertidumbre? ¡Copie al líder!" Efectos secundarios: empresas pura cáscara.');
+
+/* ----- Capítulo 3 ----- */
+sec('Capítulo 3 · La Piña ha hablado');
+vid('cap03.mp4', 'Capítulo 3 · La Piña ha hablado', '3.1 a 3.4', 'La Piña detiene la gala. Isomorfismo mimético y VRIO. "Ustedes, la junta. Ayúdenme a probarlo."');
+const VRIO = [
+  {l:'r', q:'El 3x2 de Frugle, ¿es RARO?', correct:'no', explain:'Lo tiene medio mundo. Valioso pero común: eso es empate, no ventaja.', rows:'3R', file:'cap03-r.mp4', sum:'Don Harold defiende su 3x2 y la Piña le responde.'},
+  {l:'i', q:'La novena con los buñuelos de Don Lulo, ¿es DIFÍCIL DE IMITAR?', correct:'si', explain:'Veinte años de historia no se descargan de internet. Eso es pulpa.', rows:'3I', file:'cap03-i.mp4', sum:'Don Lulo le ofrece buñuelos a la Piña.'},
+];
+VRIO.forEach((c, i) => quiz({
+  id:`d2-${c.l}`, label:`Decisión 2 · ${c.l.toUpperCase()}`, kicker:`Decisión 2 · Prueba VRIO · ${i + 1} de 2`,
+  q:c.q, timer:15, options:OPT_SN, correct:c.correct,
+  note:'En esta prueba: tarjeta verde = SÍ · tarjeta roja = NO',
+  ok:s => { s.vrio = clamp(s.vrio + 3); s.criterio += 5; },
+  wait:'Responde la Piña…', file:c.file, videoTitle:`VRIO · ${c.l.toUpperCase()}: responde la Piña`, rows:c.rows,
+  videoSum:c.sum, explain:c.explain, effect:'Ventaja VRIO +3 · Criterio del salón +5'
+}));
+vid('cap03-fin.mp4', 'Capítulo 3 · el mando es de ustedes', '3F', '"Desde ahora, las decisiones las toman ustedes." Don Harold traga saliva.');
+add({type:'bonus', label:'Capital de confianza'});
+add({type:'grito', label:'Grito nuevo', who:'Cuando alguien pregunte:', call:'¿Y cómo lo hacemos aquí?', resp:'¡Con pulpa!'});
+
+/* ----- Capítulo 4 ----- */
+sec('Capítulo 4 · Diagnóstico con alma');
+vid('cap04.mp4', 'Capítulo 4 · Diagnóstico con alma', '4.1 a 4.4', 'Torre y planta en la misma mesa. "El que no había madurado era yo." "El trabajo híbrido no se importa. Se diseña con la gente."');
+d3('d3a', 'a', 'Para la planta', '¿Qué recibe la planta?',
+  'Copiar el viernes flexible de la torre.', 'Diseñar los turnos con Don Lulo y su equipo.',
+  'cap04-planta', '4AD', '4AA');
+d3('d3b', 'b', 'Para diciembre', '¿Qué fiesta se hace en diciembre?',
+  'La gala FrutiVerso, importada de Frugle.', 'La novena con buñuelos, renovada con la gente.',
+  'cap04-diciembre', '4BD', '4BA');
+vid('cap04-fin.mp4', 'Capítulo 4 · La puerta del 21 de diciembre', '4F', 'Don Harold camina hacia la puerta de la planta. "A ver qué decidieron."');
+
+/* ----- Final ----- */
+sec('Final');
+add({type:'reveal', label:'Indicadores finales'});
+vid(s => s.final === 'a' ? 'final-con-pulpa.mp4' : 'final-pura-cascara.mp4',
+  s => s.final === 'a' ? 'Final A · Con pulpa' : 'Final B · Pura cáscara',
+  s => s.final === 'a' ? 'FA1 a FA5' : 'FB1 a FB5',
+  s => s.final === 'a' ? 'La novena con buñuelos. Daniel rompe la renuncia. Brindis con todos. "Benchmarking sí. Pero con pulpa."'
+                       : 'La gala vacía. Daniel no volvió, Don Lulo se va. "FrutiTech sobrevivió… idéntica a todas las demás."',
+  {variants:[{file:'final-con-pulpa.mp4', rows:'FA1 a FA5'}, {file:'final-pura-cascara.mp4', rows:'FB1 a FB5'}]});
+add({type:'vote', id:'otro', label:'¿Ver el otro final?', kicker:'Solo si salió "Pura cáscara"', question:'¿Quieren ver qué habría pasado si hubieran adaptado?', timer:0,
+  when:s => s.final === 'b',
+  options:[{key:'si', label:'SÍ', icon:'🍓', desc:'30 segundos del final "Con pulpa"', cls:'verde'},
+           {key:'no', label:'NO', icon:'🎬', desc:'Ir directo a los créditos', cls:'roja'}],
+  apply(s, k){ s.verOtro = (k === 'si'); }});
+vid('final-extracto.mp4', 'Así habría sido "Con pulpa"', 'FA1 + FA4', 'El primer buñuelo de Don Lulo y el brindis con todos.',
+  {when:s => s.final === 'b' && s.verOtro});
+sec('Créditos');
+vid('creditos.mp4', 'Créditos', 'CR2 + créditos + CR1', 'La despedida, el equipo, las referencias APA, la declaración de uso de IA y el blooper.');
+add({type:'end', label:'Resumen de la función'});
+
+/* =========================================================
+   MOTOR
+   ========================================================= */
+let state = clone(INIT), idx = -1, history = [], handler = null, timeouts = [], intervals = [];
+let settings = {ensayo:false, mute:false, hud:false};
+let hudShown = null;
+
+function later(fn, ms){ timeouts.push(setTimeout(fn, ms)); }
+function every(fn, ms){ intervals.push(setInterval(fn, ms)); }
+function cleanup(){
+  timeouts.forEach(clearTimeout); intervals.forEach(clearInterval); timeouts = []; intervals = [];
+  video.onended = video.onerror = null; video.pause(); video.removeAttribute('src'); video.load(); video.hidden = true;
+  document.body.classList.remove('playing', 'nohud', 'start');
+  handler = null; view.innerHTML = '';
+}
+function save(){
+  try{ localStorage.setItem(KEY_SAVE, JSON.stringify({i:idx, s:history.length ? history[history.length - 1].s : state})); }catch(e){}
+}
+function saveSettings(){ try{ localStorage.setItem(KEY_SET, JSON.stringify(settings)); }catch(e){} }
+function loadJSON(k){ try{ const r = localStorage.getItem(k); return r ? JSON.parse(r) : null; }catch(e){ return null; } }
+
+function go(i){
+  cleanup(); idx = i; history.push({i, s:clone(state)}); save();
+  const st = STEPS[i]; (RENDER[st.type])(st); updateHUD(); updateWhere();
+}
+function next(){
+  let i = idx + 1;
+  while(i < STEPS.length && STEPS[i].when && !STEPS[i].when(state)) i++;
+  if(i < STEPS.length) go(i);
+}
+function back(){
+  if(history.length < 2){ history = []; state = clone(INIT); showStart(); return; }
+  history.pop(); const p = history.pop(); state = p.s; go(p.i);
+}
+function stepLabel(st, s){
+  if(st.type === 'video') return val(st.title, s || state);
+  if(st.type === 'indicators') return st.title;
+  return st.label || st.type;
+}
+function updateWhere(){
+  const st = STEPS[idx]; if(!st){ $('#where').innerHTML = ''; return; }
+  $('#where').innerHTML = `<b>${esc(st.chapter)}</b> · ${esc(stepLabel(st))} · paso ${idx + 1} de ${STEPS.length}${settings.ensayo ? ' · <b>MODO ENSAYO</b>' : ''}`;
+}
+
+/* ---------- HUD ---------- */
+function updateHUD(){
+  const rows = [...IND, {key:'criterio', label:'Criterio del salón'}];
+  if(!hud.children.length){
+    hud.innerHTML = rows.map(r => `<div class="h-row" data-k="${r.key}"><span class="h-lbl">${r.label}</span>
+      <span class="h-val"><span class="delta"></span><span class="n">0</span></span>
+      <div class="h-track"><div class="h-fill" style="background:var(--${r.key})"></div></div></div>`).join('');
+  }
+  rows.forEach(r => {
+    const el = hud.querySelector(`[data-k="${r.key}"]`), v = state[r.key];
+    const pct = r.key === 'criterio' ? v / CRIT_MAX * 100 : v;
+    el.querySelector('.h-fill').style.width = Math.min(100, pct) + '%';
+    el.querySelector('.n').textContent = v;
+    if(hudShown && hudShown[r.key] !== v){
+      const d = el.querySelector('.delta'), diff = v - hudShown[r.key];
+      d.textContent = fmt(diff); d.className = 'delta show ' + (diff > 0 ? 'up' : 'down');
+      setTimeout(() => d.classList.remove('show'), 2600);
+    }
+  });
+  hudShown = {clima:state.clima, cultura:state.cultura, vrio:state.vrio, criterio:state.criterio};
+}
+
+/* ---------- Sonidos (generados, sin archivos) ---------- */
+let actx = null;
+function tone(f, dur, vol, type){
+  if(settings.mute) return;
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = type || 'sine'; o.frequency.value = f; o.connect(g); g.connect(actx.destination);
+    g.gain.setValueAtTime(vol || .12, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.start(t); o.stop(t + dur + .05);
+  }catch(e){}
+}
+const tick = () => tone(880, .07, .1);
+const chord = (up) => (up === false ? [392, 330, 262] : [523, 659, 784]).forEach((f, i) => setTimeout(() => tone(f, .7, .09, 'triangle'), i * 110));
+const drama = () => [196, 233, 294].forEach((f, i) => setTimeout(() => tone(f, 1.1, .08, 'sawtooth'), i * 220));
+
+/* ---------- Pantallas ---------- */
+const RENDER = {};
+
+RENDER.video = st => {
+  const f = val(st.file, state);
+  if(settings.ensayo){ placeholder(st, f, 'Modo ensayo'); return; }
+  document.body.classList.add('playing');
+  video.hidden = false; video.src = 'videos/' + f;
+  video.onended = () => next();
+  video.onerror = () => { video.hidden = true; document.body.classList.remove('playing'); placeholder(st, f, 'Este video todavía no está en la carpeta'); };
+  video.play().catch(() => {
+    if(video.hidden) return;
+    view.innerHTML = `<div class="tap"><button class="btn primary">▶ Reproducir</button></div>`;
+    view.querySelector('button').onclick = () => { view.innerHTML = ''; video.play(); };
+    document.body.classList.remove('playing');
+  });
+  handler = {
+    cont(){ if(video.paused) video.play(); else video.pause(); },
+    skip(){ next(); },
+  };
+};
+
+function placeholder(st, f, why){
+  view.innerHTML = `<div class="screen fadein"><div class="ph">
+    <div class="kicker">${esc(why)}</div>
+    <div class="bigtitle" style="font-size:clamp(28px,3.6vw,68px);margin-top:1.5vh">${esc(val(st.title, state))}</div>
+    <div class="file">videos/${esc(f)}</div>
+    <div class="rows">Filas del guion: ${esc(val(st.rows, state))}</div>
+    <div class="sum">${esc(val(st.summary, state))}</div>
+    <div class="hint" style="margin-top:4vh"><kbd>Espacio</kbd> para continuar</div></div></div>`;
+  handler = {cont: next, skip: next};
+}
+
+RENDER.vote = st => {
+  const o = st.options;
+  view.innerHTML = `<div class="vote fadein">
+    <div class="head"><div class="kicker">${esc(st.kicker)}</div><div class="question${st.question.length > 60 ? ' long' : ''}">${esc(st.question)}</div></div>
+    <div class="note">${st.note ? esc(st.note) : st.act === 1 ? 'Acto 1 · El salón opina. Don Harold decide.' : st.act === 2 ? 'Acto 2 · El salón tiene el mando: lo que decida, se ejecuta.' : ''}</div>
+    <div class="options">
+      ${o.map((x, i) => `<button class="opt ${x.cls}" data-k="${x.key}">
+        <span class="key">${x.cls === 'verde' ? 'V' : 'R'}</span>
+        <span class="icon">${x.icon}</span><span class="lbl">${esc(x.label)}</span>${x.desc ? `<span class="desc">${esc(x.desc)}</span>` : ''}</button>`).join('')}
+      ${st.timer ? `<div class="timer"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="#3a2e24" stroke-width="6"/>
+        <circle class="ring" cx="50" cy="50" r="46" fill="none" stroke="#E8C877" stroke-width="6" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="0"/></svg>
+        <span class="t">${st.timer}</span></div>` : ''}
+    </div>
+    <div class="foot hint">Cuenten las tarjetas · <kbd>V</kbd> verde · <kbd>R</kbd> roja</div></div>`;
+  let left = st.timer, done = false;
+  const tEl = view.querySelector('.timer');
+  if(st.timer){
+    const ring = tEl.querySelector('.ring'), tt = tEl.querySelector('.t');
+    every(() => {
+      if(done) return;
+      left--;
+      ring.style.strokeDashoffset = 289 * (1 - left / st.timer);
+      if(left > 0){ tt.textContent = left; if(left <= 5) tick(); }
+      else { tt.textContent = '¡TIEMPO!'; tEl.classList.add('out'); tone(440, .5, .12, 'square'); intervals.forEach(clearInterval); }
+    }, 1000);
+  }
+  const choose = key => {
+    if(done) return; done = true;
+    intervals.forEach(clearInterval);
+    view.querySelectorAll('.opt').forEach(b => b.classList.add(b.dataset.k === key ? 'chosen' : 'dim'));
+    state.choices[st.id] = key; st.apply(state, key); save(); updateHUD(); chord();
+    if(!st.resolve){ later(next, 700); handler = {cont: next, skip: next}; return; }
+    const r = st.resolve(state, key);
+    const div = document.createElement('div'); div.className = 'resolve';
+    div.innerHTML = `<div class="big">${esc(r.big)}</div><div class="small">${esc(r.small)}</div>`;
+    view.appendChild(div);
+    later(next, 3200);
+    handler = {cont: next, skip: next};
+  };
+  view.querySelectorAll('.opt').forEach(b => b.onclick = () => choose(b.dataset.k));
+  handler = {opt: i => choose((o.find(x => x.cls === (i === 0 ? 'verde' : 'roja')) || o[i]).key), skip: () => {}};
+};
+
+RENDER.answer = st => {
+  const chosen = state.choices[st.id], ok = chosen === st.correct, op = st.options.find(x => x.key === st.correct);
+  view.innerHTML = `<div class="screen fadein">
+    <div class="kicker">${esc(st.label)}</div>
+    <div class="mark ${ok ? 'ok' : 'no'}" style="margin-top:2vh">${ok ? '✓' : '✗'}</div>
+    <div class="bigsub" style="color:var(--cream)">${ok ? '¡El salón acertó!' : 'El salón no acertó'}</div>
+    <div class="answer-lbl ${op.cls}">${esc(op.label)}</div>
+    <div class="explain">${esc(st.explain)}</div>
+    ${ok ? `<div class="effect">${esc(st.effect)}</div>` : ''}
+    <div class="hint" style="margin-top:4vh"><kbd>Espacio</kbd> para continuar</div></div>`;
+  ok ? chord() : chord(false);
+  handler = {cont: next, skip: next};
+};
+
+function bigBars(prev, cur, mark){
+  return `<div class="bigbars">${IND.map(k => `<div class="bb" data-k="${k.key}">
+    <div class="bb-l">${k.label}</div>
+    <div class="bb-track"><div class="bb-fill" style="width:${prev[k.key]}%;background:var(--${k.key})"></div>${mark ? `<div class="bb-mark" style="left:${mark}%"></div>` : ''}</div>
+    <div class="bb-v">${prev[k.key]}</div><div class="bb-d"></div></div>`).join('')}</div>`;
+}
+function animateBars(prev, cur, delay, noDelta){
+  later(() => {
+    IND.forEach(k => {
+      const el = view.querySelector(`.bb[data-k="${k.key}"]`); if(!el) return;
+      el.querySelector('.bb-fill').style.width = cur[k.key] + '%';
+      countTo(el.querySelector('.bb-v'), prev[k.key], cur[k.key], 1800);
+      const d = cur[k.key] - prev[k.key], dEl = el.querySelector('.bb-d');
+      dEl.textContent = d === 0 ? '±0' : fmt(d);
+      if(noDelta) return;
+      dEl.className = 'bb-d show ' + (d > 0 ? 'up' : d < 0 ? 'down' : 'zero');
+    });
+  }, delay || 500);
+}
+function countTo(el, from, to, ms){
+  const t0 = performance.now();
+  const stepFn = t => {
+    const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(from + (to - from) * e);
+    if(p < 1 && el.isConnected) requestAnimationFrame(stepFn);
+  };
+  requestAnimationFrame(stepFn);
+}
+
+RENDER.indicators = st => {
+  document.body.classList.add('nohud');
+  const prev = clone(state);
+  Object.assign(state, st.target); save();
+  const fell = IND.some(k => state[k.key] < prev[k.key]);
+  view.innerHTML = `<div class="screen fadein">
+    <div class="kicker">Indicadores de FrutiTech</div>
+    <div class="bigtitle" style="margin-top:1vh">${esc(st.title)}</div>
+    <div class="bigsub">Continuará…</div>
+    ${bigBars(prev, state)}
+    <div class="avg">Criterio del salón: <b style="color:var(--criterio)">${state.criterio}</b> de ${CRIT_MAX} posibles</div>
+    <div class="hint" style="margin-top:3vh"><kbd>Espacio</kbd> para continuar</div></div>`;
+  animateBars(prev, state);
+  if(fell) later(drama, 400);
+  handler = {cont: next, skip: next};
+};
+
+RENDER.bonus = st => {
+  document.body.classList.add('nohud');
+  const prev = clone(state), b = Math.round(state.criterio / 5);
+  IND.forEach(k => state[k.key] = clamp(state[k.key] + b)); state.bonus = b; save();
+  view.innerHTML = `<div class="screen fadein">
+    <div class="kicker">Acto 2 · El salón toma el mando</div>
+    <div class="bigtitle" style="margin-top:1vh">Capital de confianza</div>
+    <div class="explain" style="max-width:54ch">Durante el Acto 1, Don Harold no los escuchó. Pero cada acierto contó:
+      <b style="color:var(--criterio)">${state.criterio} puntos de criterio</b> se convierten en
+      <b style="color:var(--gold2)">+${b}</b> para cada indicador.</div>
+    ${bigBars(prev, state)}
+    <div class="hint" style="margin-top:4vh"><kbd>Espacio</kbd> para continuar</div></div>`;
+  animateBars(prev, state, 900);
+  later(() => chord(), 900);
+  handler = {cont: next, skip: next};
+};
+
+RENDER.reveal = st => {
+  document.body.classList.add('nohud');
+  const zero = {clima:0, cultura:0, vrio:0}, a = avg(state);
+  state.final = a >= UMBRAL ? 'a' : 'b'; save();
+  view.innerHTML = `<div class="screen fadein">
+    <div class="kicker">21 de diciembre · Indicadores finales</div>
+    <div class="bigtitle" style="margin-top:1vh">Las decisiones de este salón tienen resultados</div>
+    ${bigBars(zero, state, UMBRAL)}
+    <div class="avg">Promedio <b id="avgn">0</b> · se necesita ${UMBRAL} o más</div>
+    <div class="verdict ${state.final}">${state.final === 'a' ? 'Final: Con pulpa' : 'Final: Pura cáscara'}</div>
+    <div class="hint" style="margin-top:3vh"><kbd>Espacio</kbd> para continuar</div></div>`;
+  animateBars(zero, state, 700, true);
+  later(drama, 300);
+  later(() => countTo($('#avgn'), 0, Math.round(a), 1500), 900);
+  later(() => { flash(); view.querySelector('.verdict').classList.add('show'); chord(state.final === 'a'); }, 3600);
+  handler = {cont: next, skip: next};
+};
+
+RENDER.luces = st => {
+  document.body.classList.add('nohud');
+  view.innerHTML = `<div class="screen fadein" style="background:#000">
+    <div class="kicker">Antes de empezar</div>
+    <div class="bigtitle" style="margin-top:2vh">Apaguen las luces</div>
+    <div class="bigsub">La función está por comenzar…</div>
+    <div class="hint" style="margin-top:6vh"><kbd>Espacio</kbd> para iniciar la intro</div></div>`;
+  const latido = () => { tone(60, .25, .25); setTimeout(() => tone(55, .3, .18), 230); };
+  latido(); every(latido, 1400);
+  handler = {cont: next, skip: next};
+};
+
+function flash(){
+  const f = document.createElement('div');
+  f.style.cssText = 'position:fixed;inset:0;z-index:9;background:#fff;pointer-events:none;transition:opacity .9s';
+  document.body.appendChild(f);
+  requestAnimationFrame(() => requestAnimationFrame(() => { f.style.opacity = '0'; }));
+  setTimeout(() => f.remove(), 1000);
+}
+
+RENDER.grito = st => {
+  view.innerHTML = `<div class="screen fadein">
+    <div class="kicker">${esc(st.label)}</div>
+    <div class="who">${esc(st.who)}</div>
+    <div class="call">${esc(st.call)}</div>
+    <div class="who">El salón responde:</div>
+    <div class="resp">${esc(st.resp)}</div>
+    <div class="hint" style="margin-top:5vh"><kbd>Espacio</kbd> para continuar</div></div>`;
+  later(() => { view.querySelector('.resp').classList.add('show'); chord(); }, 1600);
+  handler = {cont: next, skip: next};
+};
+
+RENDER.end = st => {
+  document.body.classList.add('nohud');
+  const c = state.choices, lbl = {duplicar:'DUPLICAR', adaptar:'ADAPTAR', si:'SÍ', no:'NO'};
+  const chip = k => k ? `<span class="chip ${k}">${lbl[k]}</span>` : '<span class="wait">—</span>';
+  const rows = [];
+  rows.push(`<tr><td>Decisión 1 · Política 3x2</td><td>${chip(c.d1)}</td><td>Don Harold envió igual${c.d1 === 'adaptar' ? ' · criterio +10' : ''}</td></tr>`);
+  const d2 = VRIO.filter(x => c['d2-' + x.l] === x.correct).length;
+  rows.push(`<tr><td>Decisión 2 · Prueba VRIO</td><td>${d2} de 2</td><td>VRIO +${d2 * 3} · criterio +${d2 * 5}</td></tr>`);
+  rows.push(`<tr><td>Capital de confianza</td><td>+${state.bonus}</td><td>A cada indicador</td></tr>`);
+  [['d3a','Decisión 3a · Para la planta'],['d3b','Decisión 3b · Para diciembre']]
+    .forEach(([id, t]) => { const d = c[id] ? D3[c[id]] : null;
+      rows.push(`<tr><td>${t}</td><td>${chip(c[id])}</td><td>${d ? `Clima ${fmt(d.clima)} · Cultura ${fmt(d.cultura)} · VRIO ${fmt(d.vrio)}` : ''}</td></tr>`); });
+  view.innerHTML = `<div class="end fadein">
+    <div class="kicker">Fin de la función</div>
+    <div class="bigtitle" style="margin-top:1vh">Resumen de las decisiones</div>
+    <div class="bigsub">${state.final === 'a' ? 'Final: Con pulpa' : state.final === 'b' ? 'Final: Pura cáscara' : ''}</div>
+    <table><tr><th>Momento</th><th>El salón eligió</th><th>Efecto</th></tr>${rows.join('')}
+      <tr><th>Indicadores finales</th><th colspan="2">Clima ${state.clima} · Cultura ${state.cultura} · VRIO ${state.vrio} · Promedio ${avg(state)} · Criterio ${state.criterio} de ${CRIT_MAX}</th></tr></table>
+    <div class="start-actions"><button class="btn" id="e-home">Volver al inicio</button></div></div>`;
+  $('#e-home').onclick = () => { history = []; state = clone(INIT); showStart(); };
+  handler = {cont(){}, skip(){}};
+};
+
+/* ---------- Inicio ---------- */
+function showStart(){
+  cleanup(); idx = -1; document.body.classList.add('start'); updateWhere();
+  const saved = loadJSON(KEY_SAVE);
+  const canResume = saved && saved.i > 0 && STEPS[saved.i];
+  view.innerHTML = `<div class="screen fadein">
+    <div class="kicker">Una frutinovela interactiva</div>
+    <div class="title-main" style="margin-top:2vh">Corazón de Pulpa</div>
+    <div class="title-sub">¿Duplicar o adaptar?</div>
+    <div class="fruits">🥑🍓🥭🍍</div>
+    <div class="start-actions">
+      <button class="btn primary" id="s-start">▶ Iniciar función</button>
+      ${canResume ? `<button class="btn" id="s-resume">Continuar en: ${esc(STEPS[saved.i].chapter)}</button>` : ''}
+      <button class="btn" id="s-files">Revisar videos</button>
+      <button class="btn" id="s-help">Ayuda</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="s-ensayo" ${settings.ensayo ? 'checked' : ''}> Modo ensayo: mostrar tarjetas en lugar de videos</label>
+    <div class="credit">Universidad Nacional de Colombia · Gerencia Estratégica del Talento Humano · Consola de la función</div></div>`;
+  $('#s-start').onclick = start;
+  if(canResume) $('#s-resume').onclick = () => { state = saved.s; history = []; go(saved.i); };
+  $('#s-files').onclick = showFiles;
+  $('#s-help').onclick = () => toggle('#ov-help', renderHelp);
+  $('#s-ensayo').onchange = e => { settings.ensayo = e.target.checked; saveSettings(); };
+  handler = {cont: start, skip(){}};
+}
+function start(){ tone(1, .01, .0001); state = clone(INIT); history = []; hudShown = null; go(0); }
+
+/* ---------- Superposiciones ---------- */
+function toggle(sel, renderFn){
+  const ov = $(sel);
+  if(!ov.hidden){ ov.hidden = true; return; }
+  document.querySelectorAll('.overlay').forEach(o => o.hidden = true);
+  renderFn(ov); ov.hidden = false;
+}
+function closeOverlays(){ let any = false; document.querySelectorAll('.overlay').forEach(o => { if(!o.hidden){ o.hidden = true; any = true; } }); return any; }
+
+function renderMenu(ov){
+  let html = '', ch = null;
+  STEPS.forEach((st, i) => {
+    if(st.chapter !== ch){ if(ch !== null) html += '</div>'; ch = st.chapter; html += `<h3>${esc(ch)}</h3><div class="steps">`; }
+    html += `<button data-i="${i}" class="${i === idx ? 'cur' : ''}">${esc(stepLabel(st))}<span class="t">${esc(st.type === 'video' ? 'video' : st.type === 'vote' ? 'votación' : st.type === 'answer' ? 'respuesta' : 'pantalla')}</span></button>`;
+  });
+  html += '</div>';
+  ov.innerHTML = `<div class="card"><button class="btn close" data-close>Cerrar ✕</button><h2>Menú de la función</h2>
+    <p>Saltar a cualquier paso conserva los indicadores actuales. Si hay que corregirlos a mano, use los ajustes.</p>
+    <h3>Ajustar indicadores</h3>
+    <div class="adjust">${[...IND, {key:'criterio', label:'Criterio del salón'}].map(r =>
+      `<label>${r.label}<input type="number" min="0" max="${r.key === 'criterio' ? CRIT_MAX : 100}" data-k="${r.key}" value="${state[r.key]}"></label>`).join('')}</div>
+    <div class="row-actions"><button class="btn" id="m-apply">Aplicar valores</button>
+      <button class="btn" id="m-home">Volver al inicio</button></div>
+    ${html}</div>`;
+  ov.querySelector('[data-close]').onclick = () => ov.hidden = true;
+  ov.querySelectorAll('.steps button').forEach(b => b.onclick = () => { ov.hidden = true; go(+b.dataset.i); });
+  $('#m-apply').onclick = () => {
+    ov.querySelectorAll('.adjust input').forEach(inp => {
+      const n = parseInt(inp.value, 10); if(!isNaN(n)) state[inp.dataset.k] = inp.dataset.k === 'criterio' ? Math.max(0, Math.min(CRIT_MAX, n)) : clamp(n);
+    });
+    if(history.length) history[history.length - 1].s = clone(state);
+    save(); updateHUD(); ov.hidden = true;
+  };
+  $('#m-home').onclick = () => { ov.hidden = true; history = []; state = clone(INIT); showStart(); };
+}
+
+function renderHelp(ov){
+  ov.innerHTML = `<div class="card keys"><button class="btn close" data-close>Cerrar ✕</button><h2>Ayuda para el presentador</h2>
+    <h3>Teclas</h3>
+    <table>
+      <tr><td><kbd>Espacio</kbd> o <kbd>Enter</kbd></td><td>Continuar · en un video: pausar o reanudar</td></tr>
+      <tr><td><kbd>AvPág</kbd> o <kbd>→</kbd></td><td>Continuar · en un video: saltarlo (sirve con el control de diapositivas)</td></tr>
+      <tr><td><kbd>RePág</kbd> o <kbd>←</kbd></td><td>Volver al paso anterior (deshace la votación)</td></tr>
+      <tr><td><kbd>V</kbd> o <kbd>1</kbd></td><td>Gana la tarjeta verde</td></tr>
+      <tr><td><kbd>R</kbd> o <kbd>2</kbd></td><td>Gana la tarjeta roja</td></tr>
+      <tr><td><kbd>F</kbd></td><td>Pantalla completa</td></tr>
+      <tr><td><kbd>H</kbd></td><td>Mostrar u ocultar los indicadores durante los videos</td></tr>
+      <tr><td><kbd>M</kbd></td><td>Menú: saltar a cualquier paso y ajustar indicadores a mano</td></tr>
+      <tr><td><kbd>S</kbd></td><td>Activar o silenciar los sonidos de la consola (no afecta los videos)</td></tr>
+      <tr><td><kbd>Esc</kbd></td><td>Cerrar esta ventana o el menú</td></tr>
+    </table>
+    <h3>Cómo se juega</h3>
+    <p>Cada estudiante tiene una tarjeta verde (DUPLICAR) y una roja (ADAPTAR). En cada votación se cuentan las tarjetas y el presentador oprime la que ganó.
+    En la prueba VRIO, verde significa SÍ y roja significa NO. En el Acto 1 (capítulos 1 y 2) Don Harold no escucha: los indicadores caen igual, pero votar ADAPTAR y acertar en VRIO suma criterio.
+    En el Acto 2 (capítulo 4) las decisiones se ejecutan. Si al final el promedio de los tres indicadores es ${UMBRAL} o más, se proyecta "Con pulpa"; si no, "Pura cáscara".</p>
+    <h3>Si algo falla</h3>
+    <p>Si un video no está, la consola muestra una tarjeta con su resumen y se puede seguir. Si el navegador se cierra, al abrir otra vez aparece "Continuar en…".
+    Desde el menú se puede saltar a cualquier paso y corregir los indicadores.</p></div>`;
+  ov.querySelector('[data-close]').onclick = () => ov.hidden = true;
+}
+
+function allFiles(){
+  const out = [], seen = new Set();
+  STEPS.forEach(st => {
+    if(st.type !== 'video') return;
+    const list = st.variants || [{file:st.file, rows:st.rows}];
+    list.forEach(v => { if(!seen.has(v.file)){ seen.add(v.file); out.push({file:v.file, rows:v.rows, chapter:st.chapter}); } });
+  });
+  return out;
+}
+function showFiles(){
+  toggle('#ov-files', ov => {
+    const files = allFiles();
+    ov.innerHTML = `<div class="card"><button class="btn close" data-close>Cerrar ✕</button><h2>Videos de la función</h2>
+      <p>La consola busca estos archivos en la carpeta <b>videos/</b>, al lado de este archivo. Formato recomendado: MP4 (H.264 + AAC), 1080p.
+      Los indicadores no deben ir dentro de los videos: los muestra la consola.</p>
+      <p id="f-count" style="margin-top:1.2vh;color:var(--cream);font-weight:700">Revisando…</p>
+      <table style="margin-top:1.6vh"><tr><th>Archivo</th><th>Filas del guion</th><th>Parte</th><th>Estado</th></tr>
+      ${files.map((f, i) => `<tr><td class="mono">${esc(f.file)}</td><td>${esc(f.rows)}</td><td>${esc(f.chapter)}</td><td id="f-${i}" class="wait">…</td></tr>`).join('')}</table></div>`;
+    ov.querySelector('[data-close]').onclick = () => ov.hidden = true;
+    let okN = 0, doneN = 0;
+    files.forEach((f, i) => {
+      const v = document.createElement('video'); v.preload = 'metadata'; v.muted = true;
+      const fin = (ok, txt) => { const el = $('#f-' + i); if(el){ el.className = ok ? 'ok' : 'miss'; el.textContent = txt; }
+        doneN++; if(ok) okN++; const c = $('#f-count'); if(c) c.textContent = `${okN} de ${files.length} videos listos` + (doneN < files.length ? ' · revisando…' : ''); v.removeAttribute('src'); v.load(); };
+      v.onloadedmetadata = () => { const d = v.duration; fin(true, '✓ ' + Math.floor(d / 60) + ':' + String(Math.round(d % 60)).padStart(2, '0')); };
+      v.onerror = () => fin(false, '✗ falta');
+      v.src = 'videos/' + f.file;
+    });
+  });
+}
+
+/* ---------- Controles ---------- */
+function toggleFS(){
+  try{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }catch(e){}
+}
+function toggleHUD(){ settings.hud = !settings.hud; document.body.classList.toggle('hud-on', settings.hud); saveSettings(); }
+function toggleMute(){ settings.mute = !settings.mute; $('#b-snd').textContent = settings.mute ? '🔇' : '🔊'; saveSettings(); }
+const doCont = () => handler && handler.cont && handler.cont();
+const doSkip = () => handler && (handler.skip ? handler.skip() : handler.cont && handler.cont());
+
+$('#b-back').onclick = () => { if(idx >= 0) back(); };
+$('#b-next').onclick = () => { if(handler && handler.opt) return; doSkip(); };
+$('#b-menu').onclick = () => toggle('#ov-menu', renderMenu);
+$('#b-hud').onclick = toggleHUD;
+$('#b-fs').onclick = toggleFS;
+$('#b-snd').onclick = toggleMute;
+$('#b-help').onclick = () => toggle('#ov-help', renderHelp);
+
+document.addEventListener('keydown', e => {
+  const k = e.key;
+  if(e.target && e.target.tagName === 'INPUT') { if(k === 'Escape') closeOverlays(); return; }
+  if(k === 'Escape'){ closeOverlays(); return; }
+  if(k === 'm' || k === 'M'){ e.preventDefault(); toggle('#ov-menu', renderMenu); return; }
+  if(k === '?'){ toggle('#ov-help', renderHelp); return; }
+  if(!$('#ov-menu').hidden || !$('#ov-help').hidden || !$('#ov-files').hidden) return;
+  if(k === 'f' || k === 'F'){ toggleFS(); return; }
+  if(k === 'h' || k === 'H'){ toggleHUD(); return; }
+  if(k === 's' || k === 'S'){ toggleMute(); return; }
+  if(!handler) return;
+  if(k === ' ' || k === 'Enter'){ e.preventDefault(); if(handler.opt) return; doCont(); return; }
+  if(k === 'PageDown' || k === 'ArrowRight'){ e.preventDefault(); if(handler.opt) return; doSkip(); return; }
+  if(k === 'PageUp' || k === 'ArrowLeft' || k === 'Backspace'){ e.preventDefault(); if(idx >= 0) back(); return; }
+  if(handler.opt){
+    if(k === 'v' || k === 'V' || k === '1'){ e.preventDefault(); handler.opt(0); return; }
+    if(k === 'r' || k === 'R' || k === '2'){ e.preventDefault(); handler.opt(1); return; }
+  }
+});
+
+/* Barra y cursor que se esconden solos */
+let idleT = null;
+document.addEventListener('mousemove', () => {
+  $('#bar').classList.add('show'); document.body.classList.remove('idle');
+  clearTimeout(idleT); idleT = setTimeout(() => { $('#bar').classList.remove('show'); document.body.classList.add('idle'); }, 2500);
+});
+
+/* Arranque */
+(function init(){
+  const s = loadJSON(KEY_SET); if(s) settings = Object.assign(settings, s);
+  document.body.classList.toggle('hud-on', settings.hud);
+  $('#b-snd').textContent = settings.mute ? '🔇' : '🔊';
+  updateHUD(); showStart();
+})();
+</script>
+</body>
+</html>

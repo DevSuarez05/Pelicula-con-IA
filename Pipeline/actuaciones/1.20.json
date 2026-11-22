@@ -1,0 +1,9 @@
+{"personaje": "HAROLD", "nota": "Ofendido y teatral; remata con soberbia",
+ "frases": [
+  {"t": "¿Yo?",                    "rate": "-5%",  "pitch": "+28Hz", "vol": "+10%", "pausa": 320},
+  {"t": "¿Improvisar?",            "rate": "-12%", "pitch": "+34Hz", "vol": "+10%", "pausa": 650},
+  {"t": "Por favor.",              "rate": "-28%", "pitch": "-14Hz",                "pausa": 750},
+  {"t": "Yo no improviso:",        "rate": "+4%",  "pitch": "+8Hz",                 "pausa": 380},
+  {"t": "yo copio...",             "rate": "-10%", "pitch": "+2Hz",                 "pausa": 300},
+  {"t": "con seguridad.",          "rate": "-22%", "pitch": "-16Hz", "vol": "+5%",  "pausa": 0}
+ ]}

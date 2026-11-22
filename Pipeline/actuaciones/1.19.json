@@ -1,0 +1,8 @@
+{"personaje": "VALENTINA", "nota": "Calmada e irónica, con una ceja levantada",
+ "frases": [
+  {"t": "Copiar es fácil.",                              "rate": "-6%",  "pitch": "+6Hz",  "pausa": 600},
+  {"t": "Lo difícil...",                                 "rate": "-14%", "pitch": "-4Hz",  "pausa": 380},
+  {"t": "es explicarle a la gente por qué,",             "rate": "+2%",  "pitch": "+2Hz",  "pausa": 300},
+  {"t": "de un día para otro,",                          "rate": "-4%",  "pitch": "+8Hz",  "pausa": 260},
+  {"t": "somos otra empresa.",                           "rate": "-16%", "pitch": "-8Hz",  "pausa": 0}
+ ]}

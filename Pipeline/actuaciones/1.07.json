@@ -1,0 +1,46 @@
+{
+ "personaje": "HAROLD",
+ "nota": "Showman: cada marca sube un escalón y explota en el modelo tres por dos",
+ "frases": [
+  {
+   "t": "¡Señores!",
+   "rate": "-14%",
+   "pitch": "+6Hz",
+   "vol": "+18%",
+   "pausa": 520
+  },
+  {
+   "t": "Frúgol lo hace.",
+   "rate": "+6%",
+   "pitch": "+10Hz",
+   "pausa": 280,
+   "sub": "Frugle lo hace."
+  },
+  {
+   "t": "Netfrux lo hace.",
+   "rate": "+6%",
+   "pitch": "+18Hz",
+   "pausa": 480
+  },
+  {
+   "t": "Y desde hoy...",
+   "rate": "-10%",
+   "pitch": "+4Hz",
+   "pausa": 260
+  },
+  {
+   "t": "Fruti Tec también:",
+   "rate": "+0%",
+   "pitch": "+12Hz",
+   "pausa": 420,
+   "sub": "FrutiTech también:"
+  },
+  {
+   "t": "¡el modelo tres por dos!",
+   "rate": "-14%",
+   "pitch": "+30Hz",
+   "vol": "+22%",
+   "pausa": 0
+  }
+ ]
+}

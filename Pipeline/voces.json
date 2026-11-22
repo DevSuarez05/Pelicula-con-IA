@@ -1,0 +1,8 @@
+{
+  "HAROLD":    {"voz": "es-CO-GonzaloNeural",   "rate": "-4%",  "pitch": "-10Hz"},
+  "VALENTINA": {"voz": "es-CO-SalomeNeural",    "rate": "+0%",  "pitch": "+0Hz"},
+  "DANIEL":    {"voz": "es-MX-JorgeNeural",     "rate": "+2%",  "pitch": "+6Hz"},
+  "PINA":      {"voz": "es-US-AlonsoNeural",    "rate": "-8%",  "pitch": "-4Hz"},
+  "LULO":      {"voz": "es-VE-SebastianNeural", "rate": "+0%",  "pitch": "-2Hz"},
+  "NARRADOR":  {"voz": "es-PE-AlexNeural",      "rate": "-12%", "pitch": "-6Hz"}
+}

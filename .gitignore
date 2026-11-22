@@ -1,0 +1,21 @@
+# Videos y audio: pesan ~4 GB y GitHub no acepta archivos de más de 100 MB.
+# Se comparten aparte (Release de GitHub o enlace de Drive).
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.wav
+*.mp3
+*.m4a
+
+# Archivos temporales del pipeline de montaje
+Pipeline/tmp_*/
+Pipeline/prueba/
+__pycache__/
+*.pyc
+
+# Basura del sistema y de Office
+~$*
+Thumbs.db
+desktop.ini
+.DS_Store

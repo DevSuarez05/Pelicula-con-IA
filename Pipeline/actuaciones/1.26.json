@@ -1,0 +1,7 @@
+{"personaje": "NARRADOR", "nota": "Voz de tráiler de telenovela: lenta, grave, cada frase cae como un golpe",
+ "frases": [
+  {"t": "Un clic.",                        "rate": "-18%", "pitch": "-6Hz",  "pausa": 950},
+  {"t": "Trescientos colaboradores.",      "rate": "-14%", "pitch": "-2Hz",  "pausa": 850},
+  {"t": "Una cultura... en juego.",        "rate": "-20%", "pitch": "-10Hz", "pausa": 1100},
+  {"t": "¿Qué debe hacer Don Harold?",     "rate": "-12%", "pitch": "+4Hz",  "pausa": 0}
+ ]}

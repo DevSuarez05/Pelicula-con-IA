@@ -1,0 +1,30 @@
+﻿Orden;Tipo;Archivo;Duración;Capítulo
+001;Video;videos\intro.mp4;0:46;Intro
+002;Video;videos\prologo.mp4;0:29;Prólogo
+003;Tarjeta;plan-b\montaje\003 - tarjeta grito-frugle (12 s).png;0:12;Prólogo
+004;Video;videos\cap01.mp4;1:06;Capítulo 1 · El atajo
+005;Tarjeta;plan-b\montaje\005 - tarjeta d1 (50 s).png;0:50;Capítulo 1 · El atajo
+006;Video;videos\cap01-adaptar.mp4;0:10;Capítulo 1 · El atajo
+007;Tarjeta;plan-b\montaje\007 - tarjeta ind-cap1 (10 s).png;0:10;Capítulo 1 · El atajo
+008;Video;videos\cap02.mp4;1:36;Capítulo 2 · Pura cáscara
+009;Tarjeta;plan-b\montaje\009 - tarjeta ind-acto1 (10 s).png;0:10;Capítulo 2 · Pura cáscara
+010;Video;videos\comercial.mp4;0:30;Comercial
+011;Video;videos\cap03.mp4;0:40;Capítulo 3 · La Piña ha hablado
+012;Tarjeta;plan-b\montaje\012 - tarjeta d2-r (20 s).png;0:20;Capítulo 3 · La Piña ha hablado
+013;Video;videos\cap03-r.mp4;0:10;Capítulo 3 · La Piña ha hablado
+014;Tarjeta;plan-b\montaje\014 - tarjeta d2-r-resp (8 s).png;0:08;Capítulo 3 · La Piña ha hablado
+015;Tarjeta;plan-b\montaje\015 - tarjeta d2-i (20 s).png;0:20;Capítulo 3 · La Piña ha hablado
+016;Video;videos\cap03-i.mp4;0:10;Capítulo 3 · La Piña ha hablado
+017;Tarjeta;plan-b\montaje\017 - tarjeta d2-i-resp (8 s).png;0:08;Capítulo 3 · La Piña ha hablado
+018;Video;videos\cap03-fin.mp4;0:10;Capítulo 3 · La Piña ha hablado
+019;Tarjeta;plan-b\montaje\019 - tarjeta bonus (12 s).png;0:12;Capítulo 3 · La Piña ha hablado
+020;Tarjeta;plan-b\montaje\020 - tarjeta grito-pulpa (12 s).png;0:12;Capítulo 3 · La Piña ha hablado
+021;Video;videos\cap04.mp4;0:50;Capítulo 4 · Diagnóstico con alma
+022;Tarjeta;plan-b\montaje\022 - tarjeta d3a (35 s).png;0:35;Capítulo 4 · Diagnóstico con alma
+023;Video;videos\cap04-planta-adaptar.mp4;0:10;Capítulo 4 · Diagnóstico con alma
+024;Tarjeta;plan-b\montaje\024 - tarjeta d3b (35 s).png;0:35;Capítulo 4 · Diagnóstico con alma
+025;Video;videos\cap04-diciembre-adaptar.mp4;0:10;Capítulo 4 · Diagnóstico con alma
+026;Video;videos\cap04-fin.mp4;0:10;Capítulo 4 · Diagnóstico con alma
+027;Tarjeta;plan-b\montaje\027 - tarjeta revelacion (15 s).png;0:15;Capítulo 4 · Diagnóstico con alma
+028;Video;videos\final-con-pulpa.mp4;1:04;Final · Con pulpa
+029;Video;videos\creditos.mp4;1:00;Créditos
