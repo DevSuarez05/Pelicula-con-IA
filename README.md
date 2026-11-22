@@ -26,7 +26,10 @@ Profesor: Carlos Mario Tabares.
 
 ## Videos
 
-Los videos (~4 GB) **no están en el repositorio** porque GitHub no acepta archivos de más de 100 MB. Para usar la consola hay que poner los 21 videos en `Consola/videos/` (la lista está en `Consola/LEEME.md`).
+Los videos no están dentro del repositorio porque GitHub no acepta archivos de más de 100 MB. Se descargan desde la **[release de la función](https://github.com/DevSuarez05/Pelicula-con-IA/releases/latest)**:
+
+- Los 21 videos de la consola van en `Consola/videos/` (la lista está en `Consola/LEEME.md`).
+- `respaldo.mp4` (plan B, 13:20, toda la película con el camino "Con pulpa") va en `Consola/plan-b/`.
 
 ## Cómo correr la función
 
